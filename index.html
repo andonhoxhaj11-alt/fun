@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tap Rush</title>
+<style>
+:root{--field:#14102b;--ink:#f5f0ff;--sun:#ffd23f;--pink:#ff5d8f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--field);color:var(--ink);font-family:ui-rounded,"Avenir Next",system-ui,sans-serif;touch-action:manipulation}
+#hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 16px) 22px 0;font-size:22px;font-weight:700;z-index:2}
+#target{position:absolute;width:76px;height:76px;border-radius:50%;display:none;background:radial-gradient(circle at 35% 30%,#fff6c4,var(--sun) 55%,#f0a500);box-shadow:0 0 0 8px rgba(255,210,63,.18),0 0 36px var(--sun);animation:pop .15s ease-out}
+@keyframes pop{from{transform:scale(.3)}to{transform:scale(1)}}
+#menu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:rgba(20,16,43,.94);z-index:3}
+h1{margin:0;font-size:52px;letter-spacing:-1px}
+p{margin:0;max-width:280px;line-height:1.4;opacity:.8}
+button{font:inherit;font-size:20px;font-weight:700;padding:14px 40px;border:0;border-radius:999px;background:var(--pink);color:#fff}
+button:active{transform:scale(.96)}
+@media (prefers-reduced-motion:reduce){#target{animation:none}}
+</style>
+</head>
+<body>
+<div id="hud"><span>Score <b id="score">0</b></span><span>Time <b id="time">30</b></span></div>
+<div id="target"></div>
+<div id="menu">
+  <h1 id="title">Tap Rush</h1>
+  <p id="msg">Tap the glowing dot before it jumps. It gets faster every hit. You have 30 seconds.</p>
+  <button id="go">Start</button>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const t = $('target'), menu = $('menu');
+let score = 0, left = 30, life = 1000, moveT, tickT, best = 0;
+try { best = +localStorage.getItem('taprush-best') || 0; } catch (e) {}
+if (best) $('msg').textContent += ' Best: ' + best;
+
+function place() {
+  t.style.left = (16 + Math.random() * (innerWidth - 108)) + 'px';
+  t.style.top = (90 + Math.random() * (innerHeight - 200)) + 'px';
+  t.style.display = 'block';
+  t.style.animation = 'none'; t.offsetWidth; t.style.animation = '';
+  clearTimeout(moveT);
+  moveT = setTimeout(place, life);
+}
+
+function start() {
+  score = 0; left = 30; life = 1000;
+  $('score').textContent = 0; $('time').textContent = 30;
+  menu.style.display = 'none';
+  place();
+  clearInterval(tickT);
+  tickT = setInterval(() => {
+    left--; $('time').textContent = left;
+    if (left <= 0) end();
+  }, 1000);
+}
+
+function end() {
+  clearInterval(tickT); clearTimeout(moveT);
+  t.style.display = 'none';
+  if (score > best) {
+    best = score;
+    try { localStorage.setItem('taprush-best', best); } catch (e) {}
+  }
+  $('title').textContent = 'Time!';
+  $('msg').textContent = 'You hit ' + score + ' dots. Best: ' + best;
+  $('go').textContent = 'Play again';
+  menu.style.display = 'flex';
+}
+
+t.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  score++; $('score').textContent = score;
+  life = Math.max(450, life - 25);
+  place();
+});
+$('go').onclick = start;
+</script>
+</body>
+</html>
